@@ -9,8 +9,8 @@ history for follow-up questions.
 
 ## Live Demo
 
-- **Frontend (Streamlit):** `<add your deployed Streamlit URL here>`
-- **Backend (FastAPI):** `<add your deployed backend URL here>`
+- **Frontend (Streamlit):** https://farmwise-ai-sumaiya.streamlit.app/
+- **Backend (FastAPI):** https://farmwise-ai-docp.onrender.com
 
 ## Deployment
 
@@ -31,10 +31,10 @@ reach a backend running on your own machine.
 
 **2. Deploy the frontend (Streamlit) — [Streamlit Community Cloud](https://streamlit.io/cloud) (free)**
 
-- New app → connect your GitHub repo → main file path: `app.py`
+- New app → connect your GitHub repo → main file path: `frontend/app.py`
 - Under **Advanced settings → Secrets**, add:
   ```toml
-  BACKEND_URL = "https://farmwise-backend.onrender.com/chat"
+  BACKEND_URL="https://farmwise-ai-docp.onrender.com/chat"
   ```
   (use your actual Render URL, with `/chat` on the end)
 - Deploy. `app.py` reads `BACKEND_URL` from `st.secrets` automatically,
@@ -103,8 +103,8 @@ reads from.
 **1. Clone the repo and create a virtual environment**
 
 ```bash
-git clone <your-repo-url>
-cd <your-repo-folder>
+git clone https://github.com/syedsumaiyass-yang/farmwise-ai.git
+cd farmwise-ai
 python -m venv venv
 source venv/bin/activate      # Windows: venv\Scripts\activate
 ```
@@ -140,13 +140,13 @@ This produces `data/cleaned_yield_df.csv`, which the app reads at startup.
 **5. Run the backend** (from the project root)
 
 ```bash
-uvicorn backend.main:app --reload --port 8000
+uvicorn backend.main:app --reload
 ```
 
 **6. Run the frontend** (in a separate terminal)
 
 ```bash
-streamlit run app.py
+streamlit run frontend/app.py
 ```
 
 **7. Open the app**
@@ -173,23 +173,28 @@ backend (step 5) is running first — the chatbot calls it directly.
   tool calling (chosen over the larger 70B model for its much higher
   free-tier request cap — see `DECISIONS.md`).
 - **Claude (Anthropic)** was used as an AI coding assistant throughout —
-  `<add/adjust this line to reflect exactly what you used and how>`.
+  designing the `analyze_yield` tool schema and system prompt so chart
+  decisions come entirely from the model instead of keyword rules, debugging
+  issues like silent zero-row filtering on misspelled country/crop names and
+  a pandas crash from duplicate-column grouping, writing the fuzzy name
+  resolver in `tools.py`, and drafting/refining the README and DECISIONS.md.
 
 ## Project Structure
 
 ```
 .
 ├── backend/
-│   ├── main.py            # FastAPI app: /chat, /dashboard, /dataset-info
-│   ├── llm.py              # Groq tool-calling agent loop, system prompt
-│   ├── tools.py             # Filtering, fuzzy name resolution, dataset overview
-│   ├── chart_generator.py   # Builds whatever chart the LLM decided on
-│   ├── tool_executor.py     # Dispatches LLM tool calls to the right function
-│   └── data_loader.py       # Loads data/cleaned_yield_df.csv
+│   ├── main.py             # FastAPI app: /chat, /dashboard, /dataset-info
+│   ├── llm.py               # Groq tool-calling agent loop, system prompt
+│   ├── tools.py              # Filtering, fuzzy name resolution, dataset overview
+│   ├── chart_generator.py    # Builds whatever chart the LLM decided on
+│   ├── tool_executor.py      # Dispatches LLM tool calls to the right function
+│   └── data_loader.py        # Loads data/cleaned_yield_df.csv
 ├── data/
-│   └── cleaned_yield_df.csv # dataset (see Dataset section)
-├── app.py                   # Streamlit frontend / multi-chat UI
-├── clean_data.py             # One-off script: raw CSV -> cleaned_yield_df.csv
+│   └── cleaned_yield_df.csv  # dataset (see Dataset section)
+├── frontend/
+│   └── app.py                # Streamlit frontend / multi-chat UI
+├── clean_data.py              # One-off script: raw CSV -> cleaned_yield_df.csv
 ├── requirements.txt
 ├── DECISIONS.md
 └── README.md
