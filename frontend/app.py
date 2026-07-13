@@ -14,7 +14,21 @@ import requests
 
 import plotly.io as pio
 
-BACKEND_URL = "http://127.0.0.1:8000/chat"
+# Falls back to localhost for local development. When deployed, set a
+# BACKEND_URL secret/env var pointing at your hosted FastAPI backend
+# (e.g. "https://your-backend.onrender.com/chat") - a deployed Streamlit
+# app has no way to reach "127.0.0.1" since that just means "this same
+# container", not your machine.
+def _get_backend_url():
+    try:
+        return st.secrets["BACKEND_URL"]
+    except Exception:
+        # No secrets.toml locally (normal for local dev) - fall back
+        # to an env var, then to localhost.
+        return os.getenv("BACKEND_URL", "http://127.0.0.1:8000/chat")
+
+
+BACKEND_URL = _get_backend_url()
 
 # ==========================================================
 # PAGE CONFIG
@@ -732,7 +746,7 @@ with st.sidebar:
 
     st.write("")
 
-    if st.button("➕  New Chat", width='stretch'):
+    if st.button("➕  New Chat", use_container_width=True):
         _new_chat()
         st.rerun()
 
@@ -755,7 +769,7 @@ with st.sidebar:
 
             label = ("🟢 " if is_active else "💬 ") + chat["title"]
 
-            if st.button(label, key=f"select_{chat_id}", width='stretch'):
+            if st.button(label, key=f"select_{chat_id}", use_container_width=True):
                 st.session_state.current_chat_id = chat_id
                 st.rerun()
 
@@ -851,8 +865,12 @@ def submit_question(question):
                 json={
                     "question": question,
                     "history": history_payload,
-                }
+                },
+
+                timeout=120,  # Render free tier can be slow on cold start
             )
+
+            response.raise_for_status()
 
             result = response.json()
 
@@ -864,9 +882,40 @@ def submit_question(question):
 
             applied_filters = result.get("applied_filters")
 
-        except Exception:
+        except requests.exceptions.Timeout:
 
-            answer = "❌ Unable to connect to backend."
+            answer = (
+                "❌ The backend took too long to respond (it may be "
+                "waking up from sleep on Render's free tier — try again "
+                "in ~30-60 seconds)."
+            )
+
+            chart_json = None
+            chart_summary = None
+            applied_filters = None
+
+        except requests.exceptions.ConnectionError as exc:
+
+            answer = f"❌ Couldn't reach the backend at {BACKEND_URL}. ({exc})"
+
+            chart_json = None
+            chart_summary = None
+            applied_filters = None
+
+        except requests.exceptions.HTTPError as exc:
+
+            answer = (
+                f"❌ Backend returned an error "
+                f"({response.status_code}): {response.text[:300]}"
+            )
+
+            chart_json = None
+            chart_summary = None
+            applied_filters = None
+
+        except Exception as exc:
+
+            answer = f"❌ Unexpected error: {type(exc).__name__}: {exc}"
 
             chart_json = None
 
@@ -957,7 +1006,7 @@ if len(current_chat["messages"]) == 0:
                     unsafe_allow_html=True,
                 )
                 st.markdown('<div class="fw-qa-wrap">', unsafe_allow_html=True)
-                if st.button("Explore →", key=f"qa_{i}", width='stretch'):
+                if st.button("Explore →", key=f"qa_{i}", use_container_width=True):
                     submit_question(q)
                 st.markdown('</div>', unsafe_allow_html=True)
 
@@ -1047,7 +1096,7 @@ def display_chart(
 
         st.plotly_chart(
             fig,
-            width='stretch',
+            use_container_width=True,
             key=f"chart_{index}"
         )
         st.markdown('</div>', unsafe_allow_html=True)
