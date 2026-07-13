@@ -1,0 +1,11 @@
+Possible user questions:
+1. Show rice yield in India.
+2. Show maize yield over years.
+3. Compare India and China crop yields.
+4. Show rainfall trend.
+5. Show top countries by yield.
+6. Compare rice and wheat yields.
+7. Show average temperature by year.
+8. Show yield for the last 5 years.
+9. How does rainfall affect yield?
+10. How does temperature affect yield?
