@@ -326,21 +326,27 @@ def _friendly_groq_error(exc):
     instead of letting it bubble up as an unhandled 500 (which the
     frontend then shows as a generic, misleading "Unable to connect
     to backend").
+
+    The real exception is ALWAYS printed to server logs (Render's log
+    tab) below, and now also included inline in the message itself
+    while this is being debugged - a purely generic message made it
+    impossible to tell a bad key apart from a bad request apart from
+    a genuine outage. Trim the inline detail back out once everything
+    is confirmed working end-to-end.
     """
+
+    print(f"[FarmWise AI] Groq error: {type(exc).__name__}: {exc}")
+
+    detail = getattr(exc, "message", None) or str(exc)
+    status = getattr(exc, "status_code", None)
 
     if isinstance(exc, groq.RateLimitError):
 
         info = _extract_rate_limit_info(exc)
 
         if info:
-            # Print full detail server-side for debugging - this is the
-            # useful bit while you're iterating/testing.
             print(f"[Groq rate limit] {info}")
 
-            # Whichever reset value is present tells you which limit
-            # (requests-per-minute/day vs tokens-per-minute) actually
-            # tripped - tokens usually reset in seconds, requests-per-day
-            # resets at midnight UTC and won't have a short reset value.
             reset_hint = info.get("reset_tokens") or info.get("reset_requests")
 
             if reset_hint:
@@ -356,15 +362,15 @@ def _friendly_groq_error(exc):
         )
 
     if isinstance(exc, groq.AuthenticationError):
-        return "⚠️ The AI service isn't configured correctly (authentication failed). Please check the API key."
+        return f"⚠️ Authentication with the AI service failed. Detail: {detail}"
 
     if isinstance(exc, groq.APIConnectionError):
-        return "⚠️ Couldn't reach the AI service. Please check your internet connection and try again."
+        return f"⚠️ Couldn't reach the AI service. Detail: {detail}"
 
     if isinstance(exc, groq.APIStatusError):
-        return "⚠️ The AI service returned an error. Please try again in a moment."
+        return f"⚠️ The AI service returned an error (status {status}). Detail: {detail}"
 
-    return "⚠️ Something went wrong while generating a response. Please try again."
+    return f"⚠️ Something went wrong while generating a response. Detail: {type(exc).__name__}: {exc}"
 
 
 # Cap how many past turns (user+assistant messages, not tool-call
