@@ -100,6 +100,12 @@ Guidelines for analyze_yield:
   it just because a question could also be answered with a bar chart. Use
   x_axis="crop" or "country" the same way as bar. Example: "pie chart for
   yield in India" -> chart_type="pie", x_axis="crop", countries=["India"].
+- chart_type="box" for "boxplot"/"box plot" requests, or when the user
+  explicitly asks about spread/distribution/variability/outliers/consistency
+  (e.g. "how much does yield vary across crops", "show the spread of
+  rainfall by country") - NOT for plain rankings by average, which stay
+  chart_type="bar". Use x_axis="crop" or "country" the same way as bar.
+  Example: "boxplot of yield by crop" -> chart_type="box", x_axis="crop".
 - chart_type="scatter" for relationships between two factors and yield.
   metric is ALWAYS "yield" (it is always the Y-axis for scatter plots -
   yield is what's being explained/predicted). x_axis must be the OTHER
@@ -139,6 +145,12 @@ wrong if quoted as one category's number. A "breakdown" value is itself
 already an average across all matching years - it is NOT tied to any one
 year, so never attach a specific year to it (e.g. never say "yield of X in
 year Y" for a breakdown value; just report the category and its value).
+
+For chart_type="box" results, "breakdown" instead has a different shape -
+a list of {{"category": ..., "median": ..., "min": ..., "max": ...}} per
+category. Describe spread using these (e.g. "yield for Rice ranges from
+{{min}} to {{max}}, with a median around {{median}}") - never invent a mean
+or a specific outlier value that isn't one of these three numbers.
 
 This is a MULTI-TURN conversation - reason over the full message history:
 - Base each tool call PRIMARILY on the CURRENT question's own wording.
@@ -201,7 +213,7 @@ TOOLS = [
                     },
                     "chart_type": {
                         "type": "string",
-                        "enum": ["none", "line", "bar", "pie", "scatter"],
+                        "enum": ["none", "line", "bar", "pie", "box", "scatter"],
                         "description": (
                             "'none' for a plain numeric/stat answer, 'line' for "
                             "trends over time, 'bar' for rankings/comparisons, "
@@ -209,6 +221,9 @@ TOOLS = [
                             "crop's share of total/average yield in a country) "
                             "- ONLY when the user explicitly asks for a pie "
                             "chart, since bar is clearer for most comparisons, "
+                            "'box' for the SPREAD/distribution/variability of a "
+                            "metric across a category (median, quartiles, "
+                            "outliers) rather than just its average, "
                             "'scatter' for relationships between two factors."
                         )
                     },

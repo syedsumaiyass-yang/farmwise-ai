@@ -149,6 +149,17 @@ def build_chart(
 
         fig.update_traces(textinfo="label+percent")
 
+    elif chart_type == "box":
+
+        # Unlike bar/pie/line, a boxplot needs the RAW per-row values (not
+        # pre-averaged) since the whole point is showing the distribution
+        # (median/quartiles/outliers) within each category, not a single
+        # summary number.
+        fig = px.box(
+            filtered, x=x_col, y=y_col, color=series_col,
+            points="outliers", title=chart_title
+        )
+
     elif chart_type == "scatter":
 
         fig = px.scatter(
@@ -182,6 +193,28 @@ def build_chart(
         result["breakdown"] = [
             {"category": str(row[x_col]), "value": round(float(row[y_col]), 2)}
             for _, row in data.iterrows()
+        ]
+
+    # A boxplot's whole point is the SPREAD per category, not one number -
+    # give the model the real median/min/max per category (not the mean,
+    # which isn't what a boxplot's center line represents) so it can
+    # describe the distribution without guessing.
+    if chart_type == "box" and not series_col:
+
+        stats = (
+            filtered.groupby(x_col)[y_col]
+            .agg(["median", "min", "max"])
+            .reset_index()
+        )
+
+        result["breakdown"] = [
+            {
+                "category": str(row[x_col]),
+                "median": round(float(row["median"]), 2),
+                "min": round(float(row["min"]), 2),
+                "max": round(float(row["max"]), 2),
+            }
+            for _, row in stats.iterrows()
         ]
 
     return result
