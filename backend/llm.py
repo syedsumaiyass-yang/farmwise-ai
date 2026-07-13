@@ -95,8 +95,12 @@ Guidelines for analyze_yield:
 - chart_type="line" for trends over time -> x_axis="year".
 - chart_type="bar" (without top_n=1) for open-ended rankings or comparisons
   the user wants to see laid out -> x_axis="country" or "crop".
-- chart_type="scatter" for relationships between two factors ->
-  x_axis="rainfall"/"temperature"/"pesticides", metric="yield" is the y-axis.
+- chart_type="scatter" for relationships between two factors and yield.
+  metric is ALWAYS "yield" (it is always the Y-axis for scatter plots -
+  yield is what's being explained/predicted). x_axis must be the OTHER
+  factor: "rainfall", "temperature", or "pesticides" - NEVER "yield".
+  Example: "rainfall vs yield" -> chart_type="scatter", metric="yield",
+  x_axis="rainfall". Do NOT reverse these two fields.
 - Use series_by to break ONE chart into multiple lines/bars - e.g. "break
   that down by crop" on a country's yield trend means x_axis="year",
   series_by="crop", countries=[that country].
@@ -204,16 +208,20 @@ TOOLS = [
                         "enum": ["year", "country", "crop", "rainfall", "temperature", "pesticides"],
                         "description": (
                             "What varies along the x-axis. 'year' for trends, "
-                            "'country' or 'crop' for rankings/comparisons, or a "
-                            "factor name for scatter plots."
+                            "'country' or 'crop' for rankings/comparisons, or "
+                            "'rainfall'/'temperature'/'pesticides' for scatter "
+                            "plots (the factor being compared against yield). "
+                            "Never set this to 'yield' - yield always goes in "
+                            "the separate 'metric' field instead."
                         )
                     },
                     "series_by": {
                         "type": "string",
-                        "enum": ["country", "crop"],
+                        "enum": ["none", "country", "crop"],
                         "description": (
-                            "Optional - split the chart into multiple lines/bars, "
-                            "one per country or crop. Use for requests like "
+                            "'none' (default) for no grouping. Only set to "
+                            "'country' or 'crop' to split ONE chart into "
+                            "multiple lines/bars - e.g. for requests like "
                             "'break that down by crop'."
                         )
                     },
