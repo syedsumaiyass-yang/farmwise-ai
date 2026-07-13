@@ -75,7 +75,7 @@ def build_chart(
     y_col = METRIC_COLUMN_MAP.get(metric, "hg/ha_yield")
 
     if not x_axis:
-        x_axis = "year" if chart_type == "line" else ("country" if chart_type == "bar" else "rainfall")
+        x_axis = "year" if chart_type == "line" else ("country" if chart_type in ("bar", "pie") else "rainfall")
 
     x_col = X_AXIS_COLUMN_MAP.get(x_axis, "Year")
 
@@ -128,6 +128,27 @@ def build_chart(
             text_auto=".1f", barmode="group", title=chart_title
         )
 
+    elif chart_type == "pie":
+
+        # Pie has no "series" concept (it's already one whole broken into
+        # slices), so series_by is ignored here even if the model passed
+        # one - just group by the single x_col, same sort/top_n behavior
+        # as bar so "pie chart of top 5 crops" still makes sense.
+        data = filtered.groupby(x_col)[y_col].mean().reset_index()
+
+        ascending = sort_order == "asc"
+
+        data = data.sort_values(y_col, ascending=ascending)
+
+        if top_n:
+            data = data.head(int(top_n))
+
+        fig = px.pie(
+            data, names=x_col, values=y_col, title=chart_title, hole=0.35
+        )
+
+        fig.update_traces(textinfo="label+percent")
+
     elif chart_type == "scatter":
 
         fig = px.scatter(
@@ -149,14 +170,14 @@ def build_chart(
         "chart_type": chart_type,
     }
 
-    # For bar rankings without a series split, `mean_value` above is the
-    # BLENDED average across the whole filtered set (e.g. all crops in
+    # For bar/pie rankings without a series split, `mean_value` above is
+    # the BLENDED average across the whole filtered set (e.g. all crops in
     # India combined) - not the value of whichever category the chart
     # actually highlights (e.g. Sorghum specifically). The model had no
     # real number to attach to a "which crop is lowest/highest" answer,
     # so it fabricated one. `breakdown` gives it the real category/value
     # pairs actually plotted, in the same order shown on the chart.
-    if chart_type == "bar" and not series_col:
+    if chart_type == "pie" or (chart_type == "bar" and not series_col):
 
         result["breakdown"] = [
             {"category": str(row[x_col]), "value": round(float(row[y_col]), 2)}
