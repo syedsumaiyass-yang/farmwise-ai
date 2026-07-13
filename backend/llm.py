@@ -95,6 +95,11 @@ Guidelines for analyze_yield:
 - chart_type="line" for trends over time -> x_axis="year".
 - chart_type="bar" (without top_n=1) for open-ended rankings or comparisons
   the user wants to see laid out -> x_axis="country" or "crop".
+- chart_type="pie" ONLY when the user explicitly says "pie chart" (or
+  clearly asks for a proportion/percentage/share breakdown) - never choose
+  it just because a question could also be answered with a bar chart. Use
+  x_axis="crop" or "country" the same way as bar. Example: "pie chart for
+  yield in India" -> chart_type="pie", x_axis="crop", countries=["India"].
 - chart_type="scatter" for relationships between two factors and yield.
   metric is ALWAYS "yield" (it is always the Y-axis for scatter plots -
   yield is what's being explained/predicted). x_axis must be the OTHER
@@ -196,10 +201,14 @@ TOOLS = [
                     },
                     "chart_type": {
                         "type": "string",
-                        "enum": ["none", "line", "bar", "scatter"],
+                        "enum": ["none", "line", "bar", "pie", "scatter"],
                         "description": (
                             "'none' for a plain numeric/stat answer, 'line' for "
                             "trends over time, 'bar' for rankings/comparisons, "
+                            "'pie' for a part-to-whole breakdown (e.g. each "
+                            "crop's share of total/average yield in a country) "
+                            "- ONLY when the user explicitly asks for a pie "
+                            "chart, since bar is clearer for most comparisons, "
                             "'scatter' for relationships between two factors."
                         )
                     },
